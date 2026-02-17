@@ -1,4 +1,10 @@
 # Exphil Agent
+'''
+note 
+Other ideas worth trying: 
+- Job application optimizer (CV-writer, Application writer, critic, ...)
+- Study Companion Agents (searcher, tutor agent, quiz agent, evaluator agent, )
+'''
 
 Multi-agent system that writes academic ExPhil essays (NTNU). Uploads curriculum PDFs, searches sources via RAG and web, writes drafts, evaluates with a blind critic, and revises automatically until a quality threshold is met.
 
