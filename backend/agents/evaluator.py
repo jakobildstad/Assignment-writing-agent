@@ -182,13 +182,23 @@ def evaluate(
                 iteration, score_delta, weakness_overlap, body_sim,
             )
 
+    # ── Weighted score (independence matters) ────────────────────
+    independence = getattr(critique, "independence_score", 5.0)
+    weighted_score = round(critique.score * 0.7 + independence * 0.3, 1)
+
+    logger.info(
+        "Evaluator: score={} independence={} weighted={}",
+        critique.score, independence, weighted_score,
+    )
+
     # ── Max iterations — forced approval ─────────────────────────
     if iteration >= max_iterations:
         return EvalDecision(
             approved=True,
             reason=(
                 f"Maks antall iterasjoner nådd ({max_iterations}). "
-                f"Godkjent med score {critique.score}/10. "
+                f"Godkjent med vektet score {weighted_score}/10 "
+                f"(essay: {critique.score}, selvstendighet: {independence}). "
                 f"Gjenstående svakheter: {', '.join(critique.weaknesses[:3]) if critique.weaknesses else 'ingen'}."
             ),
             iteration=iteration,
@@ -197,12 +207,13 @@ def evaluate(
             unresolved_issues=unresolved,
         )
 
-    # ── Score meets threshold — approve ──────────────────────────
-    if critique.score >= score_threshold:
+    # ── Weighted score meets threshold — approve ─────────────────
+    if weighted_score >= score_threshold:
         return EvalDecision(
             approved=True,
             reason=(
-                f"Score {critique.score}/10 møter terskel ({score_threshold}). "
+                f"Vektet score {weighted_score}/10 møter terskel ({score_threshold}) "
+                f"(essay: {critique.score}, selvstendighet: {independence}). "
                 f"Styrker: {', '.join(critique.strengths[:3]) if critique.strengths else 'N/A'}."
             ),
             iteration=iteration,
@@ -216,7 +227,9 @@ def evaluate(
         return EvalDecision(
             approved=False,
             reason=(
-                f"Score {critique.score}/10 (forrige: {previous_critique.score}/10). "
+                f"Vektet score {weighted_score}/10 "
+                f"(essay: {critique.score}, selvstendighet: {independence}, "
+                f"forrige: {previous_critique.score}). "
                 f"Stagnasjon detektert — kosmetiske endringer løser ikke problemene. "
                 f"Krever restrukturering."
             ),
@@ -232,11 +245,17 @@ def evaluate(
     if improvements:
         improvement_note = f" Forbedret: {', '.join(improvements[:2])}."
 
+    independence_note = ""
+    if independence < 6.0:
+        independence_note = f" Selvstendighet er lav ({independence}/10) — essayet trenger mer egen analyse."
+
     return EvalDecision(
         approved=False,
         reason=(
-            f"Score {critique.score}/10 under terskel ({score_threshold}). "
-            f"Topp prioriteringer: {', '.join(priorities) if priorities else 'se feedback'}.{improvement_note}"
+            f"Vektet score {weighted_score}/10 under terskel ({score_threshold}) "
+            f"(essay: {critique.score}, selvstendighet: {independence}). "
+            f"Topp prioriteringer: {', '.join(priorities) if priorities else 'se feedback'}."
+            f"{improvement_note}{independence_note}"
         ),
         iteration=iteration,
         stagnation_detected=False,

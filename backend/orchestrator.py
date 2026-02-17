@@ -34,6 +34,7 @@ from agents.writer import EssayDraft, WriterConfig, run_writer
 from config import EVALUATOR_DEFAULTS
 from llm import TokenUsage
 from rag import ingest, get_embeddings
+from utils.references import validate_references
 import session as session_store
 
 # ---------------------------------------------------------------------------
@@ -246,11 +247,27 @@ async def write_node(state: PipelineState) -> PipelineState:
             ),
         })
 
+    # Validate references post-processing
+    ref_warnings = validate_references(draft)
+    if ref_warnings:
+        logger.warning(
+            "Writer: {} reference warnings in revision {}",
+            len(ref_warnings), draft.revision_number,
+        )
+        state = await _emit(state, {
+            "event": "warning",
+            "agent": "writer",
+            "message": f"Referanseproblemer ({len(ref_warnings)}): {ref_warnings[0]}",
+        })
+
     draft_data = draft.model_dump()
 
     # Append to draft history
     draft_history = list(state.get("draft_history", []))
     draft_history.append(draft_data)
+
+    # Store reference warnings so critic can see them
+    state = {**state, "reference_warnings": ref_warnings}
 
     state = await _emit(state, {
         "event": "draft_ready",
@@ -259,6 +276,7 @@ async def write_node(state: PipelineState) -> PipelineState:
         "message": f"Utkast ferdig: «{draft.title}» ({draft.word_count} ord)",
         "draft": draft_data,
         "mode": writer_mode,
+        "reference_warnings": ref_warnings,
     })
 
     # Emit token event
@@ -307,6 +325,15 @@ async def critic_node(state: PipelineState) -> PipelineState:
                 f"Prøvde igjen med høyere grense. Feedback kan være ufullstendig."
             ),
         })
+
+    # Inject automated reference validation warnings into critique
+    ref_warnings = state.get("reference_warnings", [])
+    if ref_warnings:
+        existing_ref_issues = list(critique.reference_issues or [])
+        for w in ref_warnings:
+            if w not in existing_ref_issues:
+                existing_ref_issues.append(w)
+        critique.reference_issues = existing_ref_issues
 
     # Append to critique history
     critique_history = list(state.get("critique_history", []))

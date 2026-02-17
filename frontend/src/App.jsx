@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Markdown from "react-markdown";
+import MermaidBlock from "./components/MermaidBlock";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload,
@@ -32,6 +33,28 @@ import {
 } from "lucide-react";
 
 const API = "";
+
+// ─── Markdown components (Mermaid support) ───────────────────
+const mdComponents = {
+  code({ className, children, ...props }) {
+    const match = /language-mermaid/.exec(className || "");
+    if (match) {
+      return <MermaidBlock chart={String(children).replace(/\n$/, "")} />;
+    }
+    return <code className={className} {...props}>{children}</code>;
+  },
+  // Ensure pre doesn't double-wrap mermaid blocks
+  pre({ children, ...props }) {
+    // If the child is a MermaidBlock (rendered by code above), don't wrap in pre
+    if (children?.props?.chart !== undefined) return children;
+    // Check if child is a code element with mermaid class
+    const child = Array.isArray(children) ? children[0] : children;
+    if (child?.props?.className?.includes("language-mermaid")) {
+      return <MermaidBlock chart={String(child.props.children).replace(/\n$/, "")} />;
+    }
+    return <pre {...props}>{children}</pre>;
+  },
+};
 
 // ─── Constants ───────────────────────────────────────────────
 const MODELS = [
@@ -386,7 +409,7 @@ function InlineEditor({ draft, onSave, onReCritique, reCritiquing, sessionId }) 
         />
       ) : (
         <div className="prose prose-sm prose-glass max-w-none">
-          <Markdown>{draft.body}</Markdown>
+          <Markdown components={mdComponents}>{draft.body}</Markdown>
         </div>
       )}
     </div>
@@ -627,7 +650,20 @@ function ExportButtons({ draft, sessionId }) {
 
   function buildMd() {
     const refs = (draft.references || [])
-      .map((r) => `- ${r.author} (${r.year}). *${r.title}*.${r.page ? ` s. ${r.page}.` : ""}${r.url ? ` ${r.url}` : ""}`)
+      .map((r) => {
+        let s = `${r.author} (${r.year}) `;
+        if (r.ref_type === "article") {
+          s += `«${r.title}»`;
+          if (r.journal) s += `, *${r.journal}*.`;
+          else s += ".";
+        } else {
+          s += `*${r.title}*.`;
+          if (r.publisher) s += ` ${r.publisher}.`;
+        }
+        if (r.page) s += ` s. ${r.page}.`;
+        if (r.url) s += ` Tilgjengelig fra: ${r.url}`;
+        return s;
+      })
       .join("\n");
     return `# ${draft.title || "Essay"}\n\n${draft.body}\n\n## Referanser\n\n${refs}`;
   }
@@ -1571,7 +1607,7 @@ export default function App() {
                               />
                             ) : (
                               <div className="prose prose-sm prose-glass max-w-none">
-                                <Markdown>{currentDraft.body}</Markdown>
+                                <Markdown components={mdComponents}>{currentDraft.body}</Markdown>
                               </div>
                             )}
 
@@ -1583,7 +1619,12 @@ export default function App() {
                                 <ul className="space-y-1 list-none pl-0">
                                   {currentDraft.references.map((ref, i) => (
                                     <li key={i} className="text-[11px] text-white/35 !pl-0 !my-0">
-                                      {ref.author} ({ref.year}). <em>{ref.title}</em>.
+                                      {ref.author} ({ref.year}){" "}
+                                      {ref.ref_type === "article" ? (
+                                        <>«{ref.title}»{ref.journal ? <>, <em>{ref.journal}</em>.</> : "."}</>
+                                      ) : (
+                                        <><em>{ref.title}</em>.{ref.publisher ? ` ${ref.publisher}.` : ""}</>
+                                      )}
                                       {ref.page ? ` s. ${ref.page}.` : ""}
                                       {ref.url && <a href={ref.url} target="_blank" rel="noreferrer" className="ml-1 text-violet-400/50 hover:text-violet-400 transition">[lenke]</a>}
                                     </li>
@@ -1681,7 +1722,12 @@ export default function App() {
                                 <ul className="space-y-1">
                                   {finalDraft.references.map((ref, i) => (
                                     <li key={i} className="text-[11px] text-white/35">
-                                      {ref.author} ({ref.year}). <em>{ref.title}</em>.
+                                      {ref.author} ({ref.year}){" "}
+                                      {ref.ref_type === "article" ? (
+                                        <>«{ref.title}»{ref.journal ? <>, <em>{ref.journal}</em>.</> : "."}</>
+                                      ) : (
+                                        <><em>{ref.title}</em>.{ref.publisher ? ` ${ref.publisher}.` : ""}</>
+                                      )}
                                       {ref.page ? ` s. ${ref.page}.` : ""}
                                       {ref.url && <a href={ref.url} target="_blank" rel="noreferrer" className="ml-1 text-violet-400/50 hover:text-violet-400 transition">[lenke]</a>}
                                     </li>

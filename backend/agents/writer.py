@@ -23,11 +23,14 @@ from llm import TokenUsage, invoke_llm
 
 
 class Reference(BaseModel):
-    author: str = Field(description="Author name(s)")
+    author: str = Field(description="Author name(s), e.g. 'Dybvig, D.D., Dybvig, M. og Hjort, A.M.'")
+    year: int = Field(description="Publication year, e.g. 2023")
     title: str = Field(description="Title of the work")
-    year: int = Field(description="Publication year")
+    publisher: str = Field(default="", description="Publisher name for books, e.g. 'Fagbokforlaget'")
+    journal: str = Field(default="", description="Journal or newspaper name for articles, e.g. 'Aftenposten'")
+    url: str = Field(default="", description="URL if web source")
     page: str = Field(default="", description="Page number(s) referenced")
-    url: str | None = Field(default=None, description="URL if web source")
+    ref_type: str = Field(default="book", description="Type: 'book' | 'article' | 'web' | 'chapter'")
 
 
 class EssayDraft(BaseModel):
@@ -173,6 +176,13 @@ def _build_user_message(
         "# Output-format\n\n"
         "Skriv essayet i Markdown-format. Start med en tittel på første linje (# Tittel).\n\n"
         "Etter essayet, legg til en kildeliste under overskriften ## Referanser.\n\n"
+        "**Referanseformat (Harvard-stil):**\n"
+        "Hver referanse på egen linje, UTEN bullet points. Formater slik:\n"
+        "- Bok: Forfatter (år) *Tittel*. Forlag.\n"
+        "- Artikkel/kronikk: Forfatter (år) «Tittel», *Tidsskrift/avis*.\n"
+        "- Nettside: Forfatter (år) *Tittel*. Tilgjengelig fra: URL\n\n"
+        "ALDRI bruk placeholder-verdier som 'Ukjent' eller årstall 0. "
+        "Hvis du mangler informasjon om en kilde, utelat den heller enn å fylle inn feil data.\n\n"
         "Til SLUTT, etter alt annet, legg til en metadata-blokk i NØYAKTIG dette formatet:\n\n"
         "```json\n"
         "{\n"
@@ -298,36 +308,118 @@ def _parse_essay_response(
 
 
 def _parse_references(ref_text: str) -> list[Reference]:
-    """Best-effort parse of a markdown reference list into Reference objects."""
+    """Parse a markdown reference list into Reference objects.
+
+    Tries multiple regex patterns to handle various Harvard-style formats.
+    Skips lines that can't be parsed rather than creating garbage entries.
+    """
     refs: list[Reference] = []
     for line in ref_text.strip().splitlines():
         line = line.strip().lstrip("-•* ")
-        if not line:
+        if not line or len(line) < 10:
             continue
 
-        clean = line.replace("*", "")
-        m = re.match(
-            r"(.+?)\s*\((\d{4})\)\.\s*(.+?)(?:\.\s*(?=s\.|http|$))(.*)",
-            clean,
-        )
-        if m:
-            author, year, title_str, rest = m.groups()
-            page = ""
-            url = None
-            page_m = re.search(r"s\.\s*([\d\-–]+)", rest)
-            if page_m:
-                page = page_m.group(1)
-            url_m = re.search(r"(https?://\S+)", rest)
-            if url_m:
-                url = url_m.group(1).rstrip(".")
-            refs.append(Reference(
-                author=author.strip(),
-                title=title_str.strip().rstrip("."),
-                year=int(year),
-                page=page,
-                url=url,
-            ))
+        # Strip markdown italic markers for parsing
+        clean = line.replace("*", "").replace("_", "")
+
+        ref = _try_parse_reference_line(clean, line)
+        if ref:
+            refs.append(ref)
         else:
-            refs.append(Reference(author="Ukjent", title=line, year=0))
+            logger.warning("Could not parse reference line: {}", line[:100])
 
     return refs
+
+
+def _try_parse_reference_line(clean: str, original: str) -> Reference | None:
+    """Try multiple patterns to parse a reference line."""
+
+    # Pattern 1: Standard Harvard — Author (year) Title. Publisher/Journal.
+    m = re.match(
+        r"(.+?)\s*\((\d{4})\)\s*[.:]?\s*[«\"']?(.+?)(?:[»\"']?\s*\.?\s*$)",
+        clean,
+    )
+    if m:
+        author = m.group(1).strip()
+        year = int(m.group(2))
+        rest = m.group(3).strip()
+        return _build_reference_from_parts(author, year, rest, original)
+
+    # Pattern 2: Author, year — Title (some formats use comma instead of parens)
+    m = re.match(r"(.+?),\s*(\d{4})\s*[.:]?\s*(.+)", clean)
+    if m:
+        author = m.group(1).strip()
+        year = int(m.group(2))
+        rest = m.group(3).strip()
+        return _build_reference_from_parts(author, year, rest, original)
+
+    # Pattern 3: At minimum, find an author-like start and a 4-digit year anywhere
+    m_year = re.search(r"\((\d{4})\)", clean)
+    if m_year:
+        year = int(m_year.group(1))
+        author = clean[:m_year.start()].strip().rstrip(",").strip()
+        rest = clean[m_year.end():].strip().lstrip(".:").strip()
+        if author and rest:
+            return _build_reference_from_parts(author, year, rest, original)
+
+    return None
+
+
+def _build_reference_from_parts(
+    author: str, year: int, rest: str, original: str
+) -> Reference:
+    """Build a Reference from parsed parts, extracting optional fields."""
+    # Extract URL
+    url = ""
+    url_m = re.search(r"(https?://\S+)", rest)
+    if url_m:
+        url = url_m.group(1).rstrip(".)],;")
+        rest = rest[:url_m.start()] + rest[url_m.end():]
+
+    # Extract page numbers
+    page = ""
+    page_m = re.search(r"s\.\s*([\d\-–]+)", rest)
+    if page_m:
+        page = page_m.group(1)
+
+    # Determine ref_type
+    ref_type = "book"
+    if url:
+        ref_type = "web"
+    elif "«" in original or "»" in original:
+        ref_type = "article"
+
+    # Extract journal/newspaper (text after comma following title, before period)
+    journal = ""
+    publisher = ""
+    # Look for journal pattern: «Title», Journal.  or  "Title", Journal.
+    journal_m = re.search(r"[»\"'],?\s*(.+?)(?:\.|$)", rest)
+    if journal_m and ref_type == "article":
+        journal = journal_m.group(1).strip().rstrip(".")
+
+    # Extract publisher (last segment after period for books)
+    if ref_type == "book":
+        parts = [p.strip() for p in rest.split(".") if p.strip()]
+        if len(parts) >= 2:
+            # Title is first, publisher might be last
+            candidate = parts[-1].strip()
+            if candidate and not candidate.startswith("s.") and not candidate.startswith("http"):
+                publisher = candidate
+
+    # Title is the main content (first meaningful segment)
+    title = rest.split(".")[0].strip() if "." in rest else rest.strip()
+    title = title.strip("«»\"' ").rstrip(".,;:")
+
+    if not title:
+        title = rest.strip("«»\"' .,;:")
+
+    return Reference(
+        author=author,
+        year=year,
+        title=title,
+        publisher=publisher,
+        journal=journal,
+        url=url,
+        page=page,
+        ref_type=ref_type,
+    )

@@ -48,23 +48,37 @@ Bruk hele skalaen. Et typisk førsteutkast fra en middels student scorer 5-6. Et
 **C-nivå**: Korrekt gjengivelse, men mangler dybde. Behandler filosofer "rettferdig men overfladisk."
 **F-nivå**: Misforstår sentrale begreper, forveksler filosofer, eller bruker fagtermer feil.
 
-### 3. Argumentasjonsstruktur (20%)
+### 3. Argumentasjonsstruktur og balanse (20%)
 - Er det en **klar rød tråd** gjennom essayet?
 - Følger argumentene **logisk** av hverandre?
 - Er premissene eksplisitt formulert?
 - Finnes det logiske feilslutninger, sirkelargumentasjon, eller ugyldige slutninger?
 - Er overgangene mellom avsnitt naturlige?
+- **BALANSE-SJEKK**: Estimer antall ord brukt på hvert hovedargument i vurderingsdelen. Hvis ett argument får mer enn dobbelt så mye plass som et annet, flagg dette som en strukturell svakhet. Alle hovedargumenter fortjener proporsjonal behandling, enten grundig analyse av alle, eller en eksplisitt begrunnelse for hvorfor ett prioriteres.
 
-**A-nivå**: Krystallklar argumentasjonsstruktur. Hvert avsnitt bygger på forrige.
-**C-nivå**: Gjenkjennelig struktur, men med logiske hopp mellom avsnitt.
+**A-nivå**: Krystallklar argumentasjonsstruktur. Hvert avsnitt bygger på forrige. Proporsjonal behandling.
+**C-nivå**: Gjenkjennelig struktur, men med logiske hopp mellom avsnitt. Ujevn dybde.
 **F-nivå**: Ingen klar struktur. Argumenter kommer i tilfeldig rekkefølge.
 
-### 4. Selvstendig tenkning og drøfting (15%)
+### 4. Selvstendig tenkning og drøfting (15%) — Gir `independence_score`
 - Viser forfatteren **egne vurderinger**, eller er det bare referat?
 - Er motargumenter presentert og drøftet?
 - Tar forfatteren stilling — **med begrunnelse**?
 - Er drøftingen genuin (virkelig veier argumenter) eller overfladisk ("begge har gode sider")?
 - **Dette er det som skiller A-oppgaver fra C-oppgaver.**
+
+**Selfstendighets-indikatorer (bruk disse for `independence_score`):**
+- Egne eksempler eller moteksempler som IKKE er fra pensum (analogier, tankeeksperimenter, allmennkunnskap)
+- Egne formaliseringer eller omformuleringer av argumenter
+- Eksplisitt vurdering av premissenes styrke, ikke bare gjengivelse av hva kildene sier
+- Synlig tenkeprosess: "man kunne innvende at...", "dette forutsetter...", "jeg mener..."
+- Forbindelser mellom ulike tenkere som ikke er eksplisitt i pensum
+
+**Selvstendighetsskala:**
+- Score 1-4: Ren parafrasering av kildene. "X sier A. Y sier B." Ingen egen analyse.
+- Score 5-6: Noen egne vurderinger, men primært gjengivelse. Studentens stemme er svak.
+- Score 7-8: Klar selvstendig tenkning med egne bidrag. Bruker kilder som utgangspunkt, ikke fasit.
+- Score 9-10: Original analyse som går utover pensum. Egne tankeeksperimenter eller innsikter.
 
 **A-nivå**: Genuint selvstendig drøfting. Stiller kritiske spørsmål. Trekker originale forbindelser.
 **C-nivå**: Noe drøfting, men ofte summarisk. "Kant mener X, men Mill mener Y. Begge har poeng."
@@ -74,9 +88,14 @@ Bruk hele skalaen. Et typisk førsteutkast fra en middels student scorer 5-6. Et
 - Er påstander **underbygget med kildehenvisninger**?
 - Er pensum brukt som primærkilde?
 - Er det balanse mellom sitater og parafrasering? (For mange sitater = dårlig)
-- Er referansene korrekt formatert (Harvard-stil)?
-- Finnes det påstander som mangler kilde?
 - Brukes kilder selektivt for å støtte en forhåndsbestemt konklusjon (cherry-picking)?
+- **Referanselistekontroll (KRITISK):** Sjekk HVER referanse i listen:
+  - Har den forfatter, årstall, tittel og forlag/tidsskrift?
+  - Finnes det "Ukjent", "0", tomme felter, eller placeholder-verdier? → ALVORLIG feil, rapporter i reference_issues.
+  - Er formateringen konsistent Harvard-stil? (Forfatter (år) *Tittel*. Forlag.)
+  - Er inline-referansene (Forfatter, år, s. XX) konsistente med referanselisten?
+  - Er ALLE kilder i referanselisten faktisk brukt i teksten? Og omvendt: er alle inline-referanser i listen?
+  - Inneholder referanselisten bullet points eller nummerering? (skal ikke ha det)
 
 ### 6. Språk, stil og autentisitet (5%)
 - Er språket klart, presist og akademisk?
@@ -149,7 +168,9 @@ Strukturen skal være NØYAKTIG:
   "factual_issues": ["Feil 1 med korreksjon"],
   "missing_perspectives": ["Perspektiv 1"],
   "reference_issues": ["Problem 1"],
-  "revision_priority": ["1. Viktigst", "2. Nest viktigst"]
+  "revision_priority": ["1. Viktigst", "2. Nest viktigst"],
+  "independence_score": 6.0,
+  "independence_notes": "Konkret beskrivelse av hva som er selvstendig og hva som er gjengivelse"
 }
 ```
 
@@ -163,5 +184,7 @@ Krav til hvert felt:
 - `missing_perspectives`: Viktige perspektiver som mangler
 - `reference_issues`: Problemer med kildebruk
 - `revision_priority`: 3-7 prioriterte handlingspunkter, viktigst først
+- `independence_score`: Score 0-10 for selvstendig tenkning (se kriterier under punkt 4)
+- `independence_notes`: 1-3 setninger som forklarer scoren. Nevn konkrete eksempler på selvstendighet eller mangelen på det.
 
 VIKTIG: Svar KUN med JSON. Ingen forklaringer, ingen innledning, ingen avslutning.

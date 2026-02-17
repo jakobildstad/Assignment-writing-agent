@@ -70,6 +70,15 @@ class CritiqueResult(BaseModel):
         default_factory=list,
         description="Ordered list of what to fix first (most important → least)",
     )
+    independence_score: float = Field(
+        default=5.0,
+        ge=0, le=10,
+        description="How independently the essay thinks beyond summarizing sources (0-10)",
+    )
+    independence_notes: str = Field(
+        default="",
+        description="Specific observations about the essay's independent thinking",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -418,6 +427,16 @@ def format_feedback_for_writer(critique: CritiqueResult) -> str:
         lines.append("\n## Referanseproblemer")
         for r in critique.reference_issues:
             lines.append(f"- {r}")
+
+    if critique.independence_notes:
+        lines.append(f"\n## Selvstendighet (score: {critique.independence_score}/10)")
+        lines.append(critique.independence_notes)
+        if critique.independence_score < 6.0:
+            lines.append(
+                "\n**OBS:** Lav selvstendighets-score trekker ned totalvurderingen. "
+                "Essayet trenger mer egen analyse, egne eksempler, og eksplisitte vurderinger "
+                "— ikke bare gjengivelse av kildene."
+            )
 
     if critique.revision_priority:
         lines.append("\n## Revisjonsprioritet (fiks i denne rekkefølgen)")
