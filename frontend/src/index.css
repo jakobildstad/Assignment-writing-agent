@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* ── Orb drift animations — slow, organic, enormous ─────── */
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(120px, -80px) scale(1.08); }
+  40% { transform: translate(-60px, 100px) scale(0.95); }
+  60% { transform: translate(80px, 60px) scale(1.12); }
+  80% { transform: translate(-100px, -40px) scale(0.98); }
+}
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-100px, 70px) scale(1.1); }
+  50% { transform: translate(80px, -60px) scale(0.93); }
+  75% { transform: translate(-50px, -90px) scale(1.06); }
+}
+@keyframes orb-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  30% { transform: translate(70px, 90px) scale(1.15); }
+  60% { transform: translate(-90px, -50px) scale(0.9); }
+}
+@keyframes orb-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  35% { transform: translate(-80px, -70px) scale(1.05); }
+  70% { transform: translate(60px, 80px) scale(0.97); }
+}
+
+@utility animate-orb1 {
+  animation: orb-drift-1 120s ease-in-out infinite;
+}
+@utility animate-orb2 {
+  animation: orb-drift-2 100s ease-in-out infinite;
+}
+@utility animate-orb3 {
+  animation: orb-drift-3 110s ease-in-out infinite;
+}
+@utility animate-orb4 {
+  animation: orb-drift-4 90s ease-in-out infinite;
+}
+
+/* ── Step pulse glow ─────────────────────────────────────── */
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 12px 4px rgba(139, 92, 246, 0.15); }
+}
+@utility animate-step-pulse {
+  animation: step-pulse 2s ease-in-out infinite;
+}
+
+/* ── Glass card inner glow ────────────────────────────────── */
+@utility glass-glow {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 80px rgba(0, 0, 0, 0.5);
+}
+@utility glass-glow-active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 80px rgba(100, 60, 255, 0.06);
+}
+
+/* ── Custom range slider ──────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  margin-top: -5.5px;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+input[type="range"]::-moz-range-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+/* ── Prose dark overrides ─────────────────────────────────── */
+.prose-glass {
+  --tw-prose-body: rgba(255, 255, 255, 0.72);
+  --tw-prose-headings: rgba(255, 255, 255, 0.88);
+  --tw-prose-bold: rgba(255, 255, 255, 0.88);
+  --tw-prose-links: #a78bfa;
+  --tw-prose-counters: rgba(255, 255, 255, 0.35);
+  --tw-prose-bullets: rgba(255, 255, 255, 0.25);
+  --tw-prose-quotes: rgba(255, 255, 255, 0.55);
+  --tw-prose-quote-borders: rgba(139, 92, 246, 0.25);
+}
+
+/* ── Scrollbar styling ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+body {
+  font-family: "Inter", -apple-system, "SF Pro Display", system-ui, sans-serif;
+  background: #000;
+  color: rgba(255, 255, 255, 0.9);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Textarea focus ring ──────────────────────────────────── */
+textarea:focus {
+  outline: none;
+}
+
+/* ── Select styling for dark bg ───────────────────────────── */
+select option {
+  background: #0a0a0a;
+  color: rgba(255, 255, 255, 0.8);
+}
